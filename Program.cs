@@ -18,6 +18,10 @@ using Microsoft.AspNetCore.Builder; // required for the "Run" extension method o
 
 using Microsoft.AspNetCore.Http; // required for WriteAsync
 
+using Microsoft.Azure.Documents;
+using Microsoft.Azure.Documents.Client;
+using Newtonsoft.Json;
+
 namespace dnconsole
 {
     class Program
@@ -48,14 +52,21 @@ namespace dnconsole
              * "HttpSys" is a Windows-only HTTP server based on the Http.Sys kernel driver
 
             */ 
+            InitDocAsync(DOCDB_EMULATOR_ACC_NAME, DOCDB_EMULATOR_KEY , "ttdb", "router");
+
             Action<IApplicationBuilder> myapp = (app) => {
+                // The Run method short circuits the pipeline (that is, it will not call a next request delegate, Run should only be called at the end of your pipeline
+
+                app.Map("/create", (app1) => {
+                    app1.Run(async context => {
+                        Document doc = await cosmodbclient.CreateDocumentAsync(coll.SelfLink,  JObject.FromObject(new { channel = "new"}));
+                        await context.Response.WriteAsync(doc.Id);
+                    });
+                });
+
                 app.Run(async (context) => {
                     Console.WriteLine ($"context {context.Request.Path}");
-                    if (context.Request.Path == "/ghub") {
-                        await context.Response.WriteAsync("Hi!");
-                    } else {
-                        await context.Response.WriteAsync(ProcessRepositories().Result);
-                    }
+                    await context.Response.WriteAsync("Hi!");
                 });
             };
 
@@ -67,6 +78,7 @@ namespace dnconsole
                 .Configure(myapp)
                 .Build();
 
+                //return await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(dbid, collid, family.Id));
             host.Run();
 
             Console.WriteLine("My Hello World!");
@@ -90,5 +102,33 @@ namespace dnconsole
             return (string)o[0]["name"];
 
         }
+
+        static string DOCDB_EMULATOR_ACC_NAME = "https://localhost:8081";
+        static string DOCDB_EMULATOR_KEY = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+
+                
+        public static DocumentClient cosmodbclient;
+        public static DocumentCollection coll;
+
+        public static async Task InitDocAsync(string endpointUrl, string acckey, string dbid, string collid)  {
+            // 2 connection modes, "Gateway" (HTTPS) when accessing from corp network firewalls (443), and (Direct TCP) (10000-20000) when on Azure
+            // To allow efficient connection management and better performance by DocumentClient, use a single instance of DocumentClient per AppDomain for the lifetime of the application.
+
+            cosmodbclient = new DocumentClient(new Uri(endpointUrl), acckey, new ConnectionPolicy {
+                ConnectionMode = ConnectionMode.Direct,
+                ConnectionProtocol = Protocol.Tcp
+            });
+
+            await cosmodbclient.CreateDatabaseIfNotExistsAsync(new Database { Id = dbid });
+            //Create a new collection with an OfferThroughput set to 10000
+            //Not passing in RequestOptions.OfferThroughput will result in a collection with the default OfferThroughput set. 
+            coll = await cosmodbclient.CreateDocumentCollectionIfNotExistsAsync(
+                UriFactory.CreateDatabaseUri(dbid), 
+                new DocumentCollection { Id = collid });
+            
+            return;
+        }
+
+
     }
 }

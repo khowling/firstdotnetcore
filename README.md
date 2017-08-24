@@ -19,16 +19,19 @@
 
 # C# learning
 
+
 ## sync
 https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/index
 
 a method with the "async" _modifier_  contains a method call using the "await" keyword to do potentially long-running work without blocking the caller’s thread
 
-"Task" is returned that Represents an asynchronous operation in c# 
+"Task" is returned that Represents an asynchronous operation in c# (Talk == Promise)
 
-create a method that returns a "Task<TResult>":
+create a method that returns a "Task<TResult>" (promise):
 
 ` async Task<int> CallWwebAPI()  {..} `
+
+
 
 Calling a asyc method from a sync method, use the 'Task.Wait() method to block until finished
 
