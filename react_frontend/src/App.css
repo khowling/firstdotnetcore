@@ -1,0 +1,15 @@
+.m-panes-section-ext section {
+  padding: 5px;
+}
+
+.m-panes section {
+  text-align: left;
+}
+
+.m-panes-ext h3 {
+  text-align: left;
+}
+
+.wc-header {
+  display: none;
+}

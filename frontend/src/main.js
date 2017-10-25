@@ -4,14 +4,13 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Vuex, { mapState } from 'vuex'
 
-import App from './App'
-import MyRouter from './components/MyRouter.vue'
+import SPA from './SPA.vue'
+import Landing from './components/Landing.vue'
 import Package from './components/Package.vue'
 
-import 'bootstrap/dist/css/bootstrap.css'
+//import 'bootstrap/dist/css/bootstrap.css'
 
 Vue.config.productionTip = false
-
 /* 
 Vuex provides a mechanism to "inject" the store into all child components from the root component
  with the store option (enabled by Vue.use(Vuex)):
@@ -19,13 +18,11 @@ Vuex provides a mechanism to "inject" the store into all child components from t
  Now, you can access the state object as store.state, and trigger a state change with the store.commit method:
 */
 Vue.use(Vuex)
-
-
 Vue.use(VueRouter)
 
 const router = new VueRouter({
   routes: [
-    { path: '/', component: MyRouter },
+    { path: '/', component: Landing },
     { path: '/package', component: Package }
   ]
 })
@@ -153,11 +150,11 @@ var vm = new Vue({
     /* 
       JavaScript inline template strings
     */
-    template: '<App/>',
+    template: '<SPA/>',
     /* 
       Instead of Global, You can make a component available only in the scope this component by registering it with the components instance option 
     */
-    components: { App },
+    components: { SPA },
     /* 
       Properties and Methods
       Each Vue instance proxies all the properties found in its data object (vm.val)
