@@ -57,7 +57,7 @@ bot.on('conversationUpdate', function (message) {
     if (message.membersAdded) {
         message.membersAdded.forEach(function (identity) {
             if (identity.id !== message.address.bot.id) {
-                bot.beginDialog (message.address, 'check_router_select') //'check_router_select' ) // 'new_user')
+                bot.beginDialog (message.address, 'new_user') //'check_router_select' ) // 'new_user')
             }
         });
     }
@@ -70,7 +70,8 @@ bot.dialog('sign_in', (s) => {
     .button('Sign-in', 'https://login.microsoftonline.com')))
 })
 
-
+// When a dialog is invoked, it takes control of the conversation flow. 
+// Every new message will be subject to processing by that dialog until it either closes or redirects to another dialog.
 bot.dialog('new_user', [
     (s, args) => {
         console.log (`new_user s: ${JSON.stringify(s.message, null, 1)}  \n arges : ${JSON.stringify(args, null, 1)}`)
