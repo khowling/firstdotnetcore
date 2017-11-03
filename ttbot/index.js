@@ -1,8 +1,21 @@
-var restify = require('restify');
-var builder = require('botbuilder');
+const   restify = require('restify'),
+        builder = require('botbuilder'),
+        corsMiddleware = require('restify-cors-middleware')
 
 // Setup Restify Server
 var server = restify.createServer();
+
+const cors = corsMiddleware({
+    preflightMaxAge: 5, //Optional 
+    origins: ['*'],
+    allowHeaders: ['API-Token'],
+    exposeHeaders: ['API-Token-Expiry']
+  })
+
+server.pre(cors.preflight)
+server.use(cors.actual)
+
+
 server.listen(process.env.port || process.env.PORT || 3978, function () {
    console.log('%s listening to %s', server.name, server.url); 
 });
@@ -12,7 +25,9 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 // Create chat connector for communicating with the Bot Framework Service
 var connector = new builder.ChatConnector({
     appId: process.env.MICROSOFT_APP_ID,
-    appPassword: process.env.MICROSOFT_APP_PASSWORD
+    appPassword: process.env.MICROSOFT_APP_PASSWORD,
+    stateEndpoint: process.env.BotStateEndpoint,
+    openIdMetadata: process.env.BotOpenIdMetadata 
 });
 
 // Listen for messages from users 
@@ -25,8 +40,8 @@ server.post('/api/messages', connector.listen());
 
 // The default dialog (2nd arg) runs whenever the dialog stack is empty and no other dialog is triggered via LUIS or another recognizer
 var bot = new builder.UniversalBot(connector, (s, args) => {
-    console.log (`hello dialog: ${JSON.stringify(s.message, null, 1)}  \n arges : ${JSON.stringify(args, null, 1)}`)
-    s.endDialog('root "route" if nothing matches')
+    console.log (`root dialog: ${JSON.stringify(s.message, null, 1)}  \n arges : ${JSON.stringify(args, null, 1)}`)
+    s.beginDialog('new_user')
 })
 
 
@@ -43,7 +58,7 @@ intent_dialog.onDefault((session) => {
 .matches('<yourIntent>')... See details at http://docs.botframework.com/builder/node/guides/understanding-natural-language/
 */
 
-
+/*
 bot.use({
     botbuilder:  (session, next) => {
         var text = session.message.text;
@@ -51,7 +66,9 @@ bot.use({
         next();
     }
 });
+*/
 
+/*
 // A bot receives a conversationUpdate activity whenever it has been added to a conversation
 bot.on('conversationUpdate', function (message) {
     if (message.membersAdded) {
@@ -62,7 +79,7 @@ bot.on('conversationUpdate', function (message) {
         });
     }
 });
-
+*/
 
 bot.dialog('sign_in', (s) => {
     s.endDialog (new builder.Message(s).addAttachment (new builder.SigninCard(s)
@@ -87,16 +104,16 @@ bot.dialog('new_user', [
                         }
                     ]
                 })
-            setTimeout (() => builder.Prompts.confirm (s, "Are you experinacing any connectivity problems?"), 5000)
-        }, 12000)
+            setTimeout (() => builder.Prompts.confirm (s, "Are you experinacing any connectivity problems?"), 4000)
+        }, 6000)
     }, 
     (s,args) => {
         s.send(`${args.response ? 'Oh sorry to hear that, ' : 'No! hmmm, '} checking other data....`)
         setTimeout (() => {
             s.send(`There are no immidiate issue on your exchange & I see you dont have any support cases open...`)
             
-            setTimeout (() => builder.Prompts.confirm (s, { text: `Do you have time to check a few things out with me?`}), 6000)
-        }, 5500)
+            setTimeout (() => builder.Prompts.confirm (s, { text: `Do you have time to check a few things out with me?`}), 3000)
+        }, 3000)
     },  (s, args) => {
         if (args.response) {
             s.beginDialog('check_router_select')
@@ -137,8 +154,8 @@ var savedAddress;
 bot.dialog('router_scrape', [
         (s, args) => {
             savedAddress = s.message.address
-            s.send (`Thanks, I see you have a **${args.data}**, we have updated our records, now lets get the status of your router`)
-            setTimeout (() => builder.Prompts.confirm (s, `all good?`), 2000)
+            s.send (`Thanks, you have a **${args.data}**, we have updated our records`)
+            setTimeout (() => builder.Prompts.confirm (s, `right, now lets get the status of your router, all good?`), 2000)
         },
         (s, args) => {
         console.log (`router_scrape s: ${JSON.stringify(s.message, null, 1)}  \n args : ${JSON.stringify(args, null, 1)}`)
@@ -150,7 +167,7 @@ bot.dialog('router_scrape', [
                 builder.CardImage.create(s, 'http://m1.ttxm.co.uk/sites/rightnow/broadband/Router_Setup/Newer_GUI_summary_page.png')
             ])
             .buttons([
-                builder.CardAction.openUrl(s, 'https://docs.microsoft.com/bot-framework', 'Get Router Status')
+                builder.CardAction.openUrl(s, 'http://localhost:3000/diag', 'Get Router Status')
             ])
         s.send ( new builder.Message(s)
             .addAttachment(thCard))

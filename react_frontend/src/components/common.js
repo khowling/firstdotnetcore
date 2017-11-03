@@ -8,7 +8,7 @@ import {
 
 
 export const Persona = ({name, desc, image}) => 
-    <div className="m-persona-3">
+    <div className="m-persona-2">
         <div>
             <picture role="img" aria-label="Microsoft profile picture" style={{"backgroundColor": "white"}}>
                 <img className="c-image f-round" src={image} alt="Microsoft profile picture" id="personaSize3"/>
@@ -24,25 +24,25 @@ export const Persona = ({name, desc, image}) =>
 export const Alert = ({type, head_txt, body_txt}) => {
     let glyph = type == "error" ? "incident-triangle" : (type == "information" ? "info" : "warning")
     return (
-        <div className={`m-alert f-${type}`} role="alert" style={{"marginTop": 0, "marginBottom": "10px"}}>
-            <button className="c-action-trigger c-glyph glyph-cancel" aria-label="Close alert"></button>
-            <div>
-                <div className={`c-glyph glyph-${glyph}`} aria-label="Warning message"></div>
-                <h1 className="c-heading">{head_txt}</h1>
-                <p className="c-paragraph">{body_txt}
-                    <span className="c-group">
-                        <Link to={`/bot`} className="c-action-trigger">talk to TT-BOT</Link>
-                    </span>
-                </p>
+            <div className={`m-alert f-${type}`} role="alert" style={{"marginTop": 0, "marginBottom": "10px"}}>
+                <button className="c-action-trigger c-glyph glyph-cancel" aria-label="Close alert"></button>
+                <div>
+                    <div className={`c-glyph glyph-${glyph}`} aria-label="Warning message"></div>
+                    <h1 className="c-heading">{head_txt}</h1>
+                    <p className="c-paragraph">{body_txt}
+                        <span className="c-group">
+                            <Link to={`/bot`} className="c-action-trigger">talk to TT-BOT</Link>
+                        </span>
+                    </p>
+                </div>
             </div>
-        </div>
     )
 }
 
 export const Histogram = () => 
-    <div className="m-histogram" >
+    <div className="m-histogram" style={{"marginBottom": "30px"}}>
         <div>
-            <span>4</span>
+            <span>3.2</span>
             <div className="c-group">
                 <div className="c-rating" data-value="4" data-max="5" itemScope itemType="https://schema.org/AggregateRating">
                     <p className="x-screen-reader">Community rating:

@@ -9,10 +9,9 @@ import logo from './logo.svg'
 import './App.css'
 
 import RouterDiag from './RouterDiag.js'
-import {Persona, Alert, Histogram} from './components/common.js'
+import Bot from './components/bot.js'
 import { Landing } from './components/landing.js'
-import { Chat } from 'botframework-webchat'
-import 'botframework-webchat/botchat.css'
+import Login from './components/login.js'
 
 const Header1 = () => [
   <div data-grid="col-12" className="m-rich-heading theme-dark f-accent">
@@ -28,7 +27,7 @@ const Header1 = () => [
 ]
 
 const Header = () => 
-    <div data-grid="col-12" className="m-rich-heading  f-image" style={{"background": "#156BC6"}}>
+    <div data-grid="col-12" className="m-rich-heading  f-image" style={{"marginTop": "0", "background": "#156BC6"}}>
         <picture className="c-image">
             <source srcSet="https://ichef.bbci.co.uk/news/660/cpsprodpb/22C8/production/_86340980_talkmore.jpg" media="(min-width:0)"/>
             <img srcSet="https://ichef.bbci.co.uk/news/660/cpsprodpb/22C8/production/_86340980_talkmore.jpg" src="https://ichef.bbci.co.uk/news/660/cpsprodpb/22C8/production/_86340980_talkmore.jpg" alt="Placeholder with dark grey background"/>
@@ -181,84 +180,36 @@ const Products = () =>
                 </ul>
     </div>
 
-const AttitionalInfo = () => 
-    <section className="m-additional-information" style={{"boarderLeft": "0px solid rgba(0,0,0,.2)"}}>
-        <div data-grid="col-12 stack-2">
 
-                <div data-grid="col-6">
-                    <ul className="c-list f-bare f-lean">
-                        <li>
-                            <strong>Publisher</strong>
-                        </li>
-                        <li>Electronic Arts</li>
-                        <li>Copyright &copy; 2016</li>
-                    </ul>
-                    <ul className="c-list f-bare f-lean">
-                        <li>
-                            <strong>Release date</strong>
-                        </li>
-                        <li>11/4/15</li>
-                    </ul>
-                    <ul className="c-list f-bare f-lean">
-                        <li>
-                            <strong>Approximate size</strong>
-                        </li>
-                        <li>00.00 GB</li>
-                    </ul>
-                </div>
-                <div data-grid="col-6">
-                    <div className="c-age-rating">
-                        <img className="c-image" src="http://placehold.it/56x56" alt="Placeholder with grey background"/>
-                        <p className="c-label">Teen</p>
-                        <p className="c-paragraph">Suitable for 13+</p>
-                        <div className="c-content-toggle">
-                            <ul className="c-list f-bare f-lean" id="learn-more" data-f-expanded="false">
-                                <li>Blood and gore</li>
-                                <li>Adult themes</li>
-                            </ul>
-                            <button data-f-more="More" data-f-less="Less" data-f-show="0" aria-hidden="true">More</button>
-                        </div>
-                    </div>
-                    <div className="c-content-toggle">
-                        <p id="content-toggle-target" data-f-expanded="false">
-                            <strong>Permissions</strong>
-
-
-                        </p>
-                        <button data-f-more="Show more" data-f-less="Show less" data-f-show="3" aria-hidden="true">Show more</button>
-                    </div>
-                </div>
-        </div>
-    </section>
-
-const Panes2 = () => 
-  <div className="m-panes m-panes-section-ext" data-grid="col-12">
-    <section>
-        <div data-grid="col-12" className="m-banner">
-            <h2 className="c-heading-3">Broadband details</h2>
-            <a href="#" className="c-call-to-action c-glyph">
-                <span>See new Offers</span>
-            </a>
-        </div>
-        <AttitionalInfo/>
-        <Histogram/>
-    </section>
-    <section>
-        <Alert type="error" head_txt="Router Disconnecting" body_txt="We've detected a potential issue"/>
-        <Persona name="TT-BOT" desc="Connectivity Specilist" image="https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Cartoon_Robot.svg/407px-Cartoon_Robot.svg.png"/>
-        <div style={{"position": "relative", "height": "550px", "textAlign": "left"}}>
-        <Chat directLine={{ 
-            //domain: "http://localhost:3978/api/messages",
-            //webSocket: false,
-            secret: "v1qqRfc36XU.cwA.Lhg.IhYIqjHqUBOWPManjbvHtxA6mm763YmgwOCZ1u-SIv4" }
-            } 
-            user={{ id: 'Keith', name: 'Keith' }}/>
-        </div>
-    </section>
-  </div>
 
 class App extends Component {
-  state = { value: 0 };
+  state = { connection: "Not Connected" };
+
+  _wsSendJoin(keepalive) {
+    this.setState ({connection: "connected"})
+  }
+
+  _wsMessageEvent(event) {
+    console.log(`dispatching message from server ${event.data}`);
+    var msg = JSON.parse(event.data)
+    this.setState({connection: JSON.stringify(msg)})
+  }
+
+  _wsCloseEvent(event) {
+    this.ws.removeEventListener('open', this._wsSendJoin.bind(this));
+    this.ws.removeEventListener('message', this._wsMessageEvent.bind(this));
+    this.ws.removeEventListener('close', this._wsCloseEvent.bind(this));
+    this.ws = null;
+    this.setState ({connection: "Not Connected"})
+  }
+
+
+  componentDidMount() {
+    this.ws = new WebSocket(`ws://${window.location.hostname}:5000/ws`);
+    this.ws.addEventListener('open', this._wsSendJoin.bind(this, false));
+    this.ws.addEventListener('message', this._wsMessageEvent.bind(this));
+    this.ws.addEventListener('close', this._wsCloseEvent.bind(this));
+  }
 
   render() {
     return (
@@ -267,9 +218,11 @@ class App extends Component {
             <a className="m-skip-to-main" href="#mainContent" tabIndex="0">Skip to main content</a>
             <main id="mainContent" data-grid="container">
                 <Header/>
-                <Route exact path="/bot" component={Panes2}/>
+                <div>{this.state.connection}</div>
+                <Route exact path="/bot" component={Bot}/>
                 <Route exact path="/diag" component={RouterDiag}/>
-                <Route exact path="/" component={Landing}/>
+                <Route exact path="/myusage" component={Landing}/>
+                <Route exact path="/" component={Login}/>
             </main>
             </div>
         </Router>

@@ -59,11 +59,17 @@ namespace dnconsole
             InitAppAsync();
             Console.Read();
         }
+
+
+        
+        static string DOCDB_EMULATOR_ACC_NAME = "https://ttmyaccount.documents.azure.com:443"; //"https://localhost:8081";
+        static string DOCDB_EMULATOR_KEY = "gtdvCoU2xZjgGyyOvpr1nx4nxCtucgyeaTBmTo0K2MHJy1s6Gu6tM1hnDsC7Ej3DvwqBiz2C6gzo7bQELBJVuw=="; //"C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+
         
         private static async void InitAppAsync() {
             Console.WriteLine("InitDocAsync");
             //await InitDocAsync(DOCDB_EMULATOR_ACC_NAME, DOCDB_EMULATOR_KEY , "ttdb01", "router01");
-            CosmoDriver.InitCosmoDriver (DOCDB_EMULATOR_ACC_NAME, DOCDB_EMULATOR_KEY , "ttdb01", new string[] {"router01"});
+            CosmoDriver.InitCosmoDriver (DOCDB_EMULATOR_ACC_NAME, DOCDB_EMULATOR_KEY , "ttdb01", new string[] {"router01", "cases"});
             Console.WriteLine("StartKestralAsync");
             await StartKestralAsync();
             Console.WriteLine("Done");
@@ -123,14 +129,10 @@ namespace dnconsole
                 // Each delegate can perform operations before and after the next delegate. 
                 // A delegate can also decide to not pass a request to the next delegate, which is called short-circuiting the request pipeline
 
-
                 // You can chain multiple request delegates together with app.Use. 
                 // The next parameter represents the next delegate in the pipeline
                 // app.Use(async (context, next) => {... await next.Invoke(); }
                 // Do not call next.Invoke after the response has been sent to the client
-
-
-                
 
                 app.Map("/create", (app1) => {
                     Console.WriteLine($"1created doc {"create"}");
@@ -145,6 +147,10 @@ namespace dnconsole
                     app1.Run(async context => {
                         if (context.WebSockets.IsWebSocketRequest) {
                             WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+
+                            var encoded = System.Text.Encoding.UTF8.GetBytes("{\"status\": \"Connecting to Cosmos Change Feed\"}");
+                            await webSocket.SendAsync(new ArraySegment<Byte>(encoded, 0, encoded.Length), WebSocketMessageType.Text, true, System.Threading.CancellationToken.None);
+                            CosmoDriver.Instance.pushClients = new List<WebSocket> {webSocket};
                             await Echo(context, webSocket);
                         }
                         else {
@@ -175,6 +181,7 @@ namespace dnconsole
             return host.RunAsync();
         }
 
+/*
         // the "async" modifier to specify that a method
         // "async" method uses the await keyword to do potentially long-running work without blocking the caller’s thread
 
@@ -191,10 +198,6 @@ namespace dnconsole
             return (string)o[0]["name"];
 
         }
-
-        static string DOCDB_EMULATOR_ACC_NAME = "https://localhost:8081";
-        static string DOCDB_EMULATOR_KEY = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
-
 
         public static DocumentClient cosmodbclient;
         public static DocumentCollection coll;
@@ -218,7 +221,7 @@ namespace dnconsole
             
             return;
         }
-
+*/
 
     }
 }
