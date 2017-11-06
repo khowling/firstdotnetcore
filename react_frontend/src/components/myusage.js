@@ -9,7 +9,7 @@ import CSSTransitionGroup  from 'react-transition-group/Transition'
 
 import {Persona, Alert, Histogram} from './common.js'
 
-export const Landing = () => [
+export const MyUsage = () => [
     <PackageHeading key={1}/>,
     <Alerts  key={2}/>,
     <MyProducts  key={3}/>
@@ -29,9 +29,9 @@ export const PackageHeading = () =>
     </div>
 
     {/*
-    <header data-grid="col-12" class="x-offset-content">
-        <h3 data-grid="col-12" class="c-heading-3 x-hidden-focus">Usage Index</h3>
-        <p data-grid="col-8" class="c-paragraph-3">The <i>usage index</i>  is a indication of the value you are getting from your package, and help you to maximise it, <strong>1 = you can get more value, 5 = you are maxing out your package</strong>.</p>
+    <header data-grid="col-12" className="x-offset-content">
+        <h3 data-grid="col-12" className="c-heading-3 x-hidden-focus">Usage Index</h3>
+        <p data-grid="col-8" className="c-paragraph-3">The <i>usage index</i>  is a indication of the value you are getting from your package, and help you to maximise it, <strong>1 = you can get more value, 5 = you are maxing out your package</strong>.</p>
     </header>,
     <Histogram/>
     */}

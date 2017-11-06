@@ -61,7 +61,7 @@ namespace dnconsole
         }
 
 
-        
+        static string COLLECTION = "myaccount";
         static string DOCDB_EMULATOR_ACC_NAME = "https://ttmyaccount.documents.azure.com:443"; //"https://localhost:8081";
         static string DOCDB_EMULATOR_KEY = "gtdvCoU2xZjgGyyOvpr1nx4nxCtucgyeaTBmTo0K2MHJy1s6Gu6tM1hnDsC7Ej3DvwqBiz2C6gzo7bQELBJVuw=="; //"C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
 
@@ -69,7 +69,7 @@ namespace dnconsole
         private static async void InitAppAsync() {
             Console.WriteLine("InitDocAsync");
             //await InitDocAsync(DOCDB_EMULATOR_ACC_NAME, DOCDB_EMULATOR_KEY , "ttdb01", "router01");
-            CosmoDriver.InitCosmoDriver (DOCDB_EMULATOR_ACC_NAME, DOCDB_EMULATOR_KEY , "ttdb01", new string[] {"router01", "cases"});
+            CosmoDriver.InitCosmoDriver (DOCDB_EMULATOR_ACC_NAME, DOCDB_EMULATOR_KEY , "ttdb01", new string[] {COLLECTION});
             Console.WriteLine("StartKestralAsync");
             await StartKestralAsync();
             Console.WriteLine("Done");
@@ -89,61 +89,54 @@ namespace dnconsole
             await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
         }
 
+
+
+        /* ASP.NET Core application runs with an in-process HTTP server implementation that listens for HTTP requests and surfaces them to the application as an "HttpContext"
+            ASP.NET Ships with 2 server implementations: 
+            - "Kestrel" is a cross-platform HTTP/S server based on libuv, it supports WebSockets high-perf Unix sockets
+            - "HttpSys" is a Windows-only HTTP server based on the Http.Sys kernel driver
+         */
         private static Task StartKestralAsync() {
-            /*
-            ASP.NET Core apps require a host in which to execute. A host references the server that will handle requests
-            The host is responsible for application startup and lifetime management, bootstraps the server for the app
-            You create a host using an instance of WebHostBuilder.  call CreateDefaultbuilder to build a host, it:
-                Sets the content root (location of appsettings.json)
-                Loads configuration from (appsettings.json)
-                environment variables
-                Configures logging for console and debug output
-                handles IIS instegration (optional)
-
-            When setting up a host, you can provide Configure and ConfigureServices methods, instead of or in addition to specifying a Startup class 
-
-            ASP.NET Core application runs with an in-process HTTP server implementation
-            The server listens for HTTP requests and surfaces them to the application as an "HttpContext"
-            ASP.NET Ships with 2 server implementations
-             * "Kestrel" is a cross-platform HTTP server based on libuv, it supports features:
-                * HTTPS
-                * Opaque upgrade used to enable WebSockets
-                * Unix sockets for high performance behind Nginx 
-             * "HttpSys" is a Windows-only HTTP server based on the Http.Sys kernel driver
-            */ 
-
-            Action<IApplicationBuilder> myapp = (app) => {
+            
+            /*  This is the application pipeline to handle requests and responses
+                https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware
+                Ordering is importand: 
+            */
+            Action<IApplicationBuilder> appPipeline = (app) => {
                 
-                // This is the application pipeline to handle requests and responses
-                //  https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware
-                // Ordering is importand:
-                
-            //    app.UseStaticFiles(); // build in middleware to host static files
-
+                //app.UseStaticFiles(); // build in middleware to host static files
                 app.UseWebSockets(); // build in middleware 
+                //app.UseAuthentication(); // built in middleware to Authenticate before you access
 
-                //app.UseIdentity();  // built in middleware to Authenticate before you access
-
-                // Request delegates are used to build the request pipeline
-                // Request delegates are configured using "Run", "Map", and "Use" extension methods
-                // Each delegate can perform operations before and after the next delegate. 
-                // A delegate can also decide to not pass a request to the next delegate, which is called short-circuiting the request pipeline
-
-                // You can chain multiple request delegates together with app.Use. 
-                // The next parameter represents the next delegate in the pipeline
-                // app.Use(async (context, next) => {... await next.Invoke(); }
-                // Do not call next.Invoke after the response has been sent to the client
-
-                app.Map("/create", (app1) => {
-                    Console.WriteLine($"1created doc {"create"}");
+                /*
+                     https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware?tabs=aspnetcore2x#ordering
+                    You configure the HTTP pipeline using "Use", "Run", and "Map"
+                    - "Run" : (a convention): The first Run delegate terminates the pipeline.
+                    - "Use" : chain multiple request delegates together, this can short-circuit the pipeline if it does not call a next.Invoke)
+                    - "Map" : branches the request pipeline based on matches of the given request path
+                    Each delegate can perform operations before and after the next delegate. 
+                    A delegate can also decide to not pass a request to the next delegate, which is called short-circuiting the request pipeline
+                */
+                app.Map("/api/insert", (app1) => {
                     app1.Run(async context => {
-                        Document doc = await CosmoDriver.Instance.insert("router01", JObject.FromObject(new {key1 = new []{new {imbed1 = "val1", imbed2 = "val2"}, new {imbed1 = "val1", imbed2 = "val2"}}}));
+                        Document doc = await CosmoDriver.Instance.insertAsync(COLLECTION, JObject.FromObject(new {type = "case", name = "Upgrading Firmware", date = DateTime.Now.ToString("M"), status = "OPEN"}));
                         Console.WriteLine($"created doc {doc.Id}");
                         await context.Response.WriteAsync(doc.Id);
                     });
                 });
 
+                app.Map("/api/query", (app1) => {
+                    app1.Run(async context => {
+                        Console.WriteLine($"/query {context.Request.Path.Value}");
+                        List<Document> docs = await CosmoDriver.Instance.queryAsync(COLLECTION, $"SELECT c.id, c.name, c.date,  c.status FROM {COLLECTION} c where c.type = 'case'");
+                        await context.Response.WriteAsync(JsonConvert.SerializeObject(docs));
+                    });
+                });
+
                 app.Map("/ws", (app1) => {
+
+                    Console.WriteLine($"/ws registering 'Run'");
+
                     app1.Run(async context => {
                         if (context.WebSockets.IsWebSocketRequest) {
                             WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
@@ -168,12 +161,24 @@ namespace dnconsole
                 });
             };
 
+            /*  ASP.NET Core apps require a "host" in which to execute. A host references the server that will handle requests
+                The host is responsible for application startup and lifetime management, bootstraps the server for the app
+                You create a host using an instance of "WebHostBuilder".  call CreateDefaultbuilder to build a host, it:
+                Sets the content root (location of appsettings.json)
+                Loads configuration from (appsettings.json)
+                environment variables
+                Configures logging for console and debug output
+                handles IIS instegration (optional)
+
+            When setting up a host, you can provide Configure and ConfigureServices methods, instead of or in addition to specifying a Startup class 
+
+            */
             var host = new WebHostBuilder()
                 .UseKestrel()
                 .UseWebRoot("public") // (Content Root Path)\public
                 // The Configure method is used to specify how the ASP.NET application will respond to HTTP requests.
-                // Middleware: Request delegates are configured using Run, Map, and Use extension methods on the IApplicationBuilder instance that is passed into the Configure method
-                .Configure(myapp)
+
+                .Configure(appPipeline)
                 .UseApplicationInsights()
                 .Build();
 

@@ -10,7 +10,7 @@ import './App.css'
 
 import RouterDiag from './RouterDiag.js'
 import Bot from './components/bot.js'
-import { Landing } from './components/landing.js'
+import { MyUsage } from './components/myusage.js'
 import Login from './components/login.js'
 
 const Header1 = () => [
@@ -20,23 +20,24 @@ const Header1 = () => [
         <span>Microsoft</span>
     </div>
     <div>
-        <h3 className="c-heading">TalkTalk</h3>
+        <h3 className="c-heading">TopTelco</h3>
         <p className="c-paragraph-3">My Provider</p>
     </div>
   </div>
 ]
 
-const Header = () => 
-    <div data-grid="col-12" className="m-rich-heading  f-image" style={{"marginTop": "0", "background": "#156BC6"}}>
-        <picture className="c-image">
-            <source srcSet="https://ichef.bbci.co.uk/news/660/cpsprodpb/22C8/production/_86340980_talkmore.jpg" media="(min-width:0)"/>
-            <img srcSet="https://ichef.bbci.co.uk/news/660/cpsprodpb/22C8/production/_86340980_talkmore.jpg" src="https://ichef.bbci.co.uk/news/660/cpsprodpb/22C8/production/_86340980_talkmore.jpg" alt="Placeholder with dark grey background"/>
-        </picture>
-        <div>
-            <h3 className="c-heading">TalkTalk - Whitebuilding Hackathon</h3>
-            <p className="c-paragraph-3">You can now personalize your Connectivity with over 8 million possible options. You design it. We provide it.</p>
+const RichHeading = () => 
+        <div className="m-rich-heading  f-image">
+            <picture className="c-image">
+                <img srcSet="https://media.licdn.com/mpr/mpr/shrinknp_800_800/p/1/005/0ac/3fe/06aaca7.jpg" src="https://media.licdn.com/mpr/mpr/shrinknp_800_800/p/1/005/0ac/3fe/06aaca7.jpg" alt="Placeholder with dark grey background"/>
+            </picture>
+            <section  data-grid="container">
+                <div data-grid="col-12">
+                    <h3 className="c-heading">TopTelco - Subscriber Portal</h3>
+                    <p className="c-paragraph-3">You can now personalize your Connectivity with over 8 million possible options. You design it. We provide it.</p>
+                </div>
+            </section>
         </div>
-    </div>
 
 
 
@@ -183,7 +184,7 @@ const Products = () =>
 
 
 class App extends Component {
-  state = { connection: "Not Connected" };
+  state = { connection: "Not Connected", caseupdates: [] };
 
   _wsSendJoin(keepalive) {
     this.setState ({connection: "connected"})
@@ -191,8 +192,10 @@ class App extends Component {
 
   _wsMessageEvent(event) {
     console.log(`dispatching message from server ${event.data}`);
-    var msg = JSON.parse(event.data)
-    this.setState({connection: JSON.stringify(msg)})
+    let msg = JSON.parse(event.data)
+    if (msg.type == "case") {
+        this.setState({caseupdates: this.state.caseupdates.concat(msg)})
+    }
   }
 
   _wsCloseEvent(event) {
@@ -214,17 +217,16 @@ class App extends Component {
   render() {
     return (
         <Router>
-            <div>
-            <a className="m-skip-to-main" href="#mainContent" tabIndex="0">Skip to main content</a>
-            <main id="mainContent" data-grid="container">
-                <Header/>
-                <div>{this.state.connection}</div>
-                <Route exact path="/bot" component={Bot}/>
-                <Route exact path="/diag" component={RouterDiag}/>
-                <Route exact path="/myusage" component={Landing}/>
-                <Route exact path="/" component={Login}/>
+            <main id="mainContent">
+                <RichHeading/>
+                <div data-grid="container">
+                    <div data-grid="col12">{this.state.connection}</div>
+                    <Route exact path="/bot" render={(props) => (<Bot caseupdates={this.state.caseupdates} />)}/>
+                    <Route exact path="/diag" component={RouterDiag}/>
+                    <Route exact path="/myusage" component={MyUsage}/>
+                    <Route exact path="/" component={Login}/>
+                </div>
             </main>
-            </div>
         </Router>
     )
   }

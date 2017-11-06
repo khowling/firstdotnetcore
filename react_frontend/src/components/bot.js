@@ -21,7 +21,7 @@ class AttitionalInfo extends Component {
                                 <li>
                                     <strong>Router Model</strong>
                                 </li>
-                                <li>TalkTalk Plus Fibre</li>
+                                <li>TopTelco Plus Fibre</li>
                                 <li>router &copy; 2016</li>
                             </ul>
                             <ul className="c-list f-bare f-lean">
@@ -34,7 +34,7 @@ class AttitionalInfo extends Component {
                                 <li>
                                     <strong>Firmware Version</strong>
                                 </li>
-                                <li><div class="pulseme">Unknown</div></li>
+                                <li><div className="pulseme">Unknown</div></li>
                             </ul>
                         </div>
                         <div data-grid="col-6">
@@ -65,36 +65,47 @@ class AttitionalInfo extends Component {
 }
 
 class Cases extends Component {
-    
+    state = {cases: []};
+
+    componentDidMount() {
+        fetch ('/api/query/cases').then(response => {
+            return response.json()
+        }).then(json => this.setState ({cases: json}))
+    }
+
     render () {
 
         return (
-            <div class="c-table f-divided"  style={{"width": "95%"}} data-f-loc-ascending="Sorted by {0} - ascending" data-f-loc-descending="Sorted by {0} - descending">
+            <div className="c-table f-divided"  style={{"width": "95%"}} data-f-loc-ascending="Sorted by {0} - ascending" data-f-loc-descending="Sorted by {0} - descending">
                 <table data-f-sort="true">
                     <thead>
                         <tr>
-                            <th scope="col" class="f-sortable" colspan="1" aria-sort="none">
+                            <th scope="col" className="f-sortable" colSpan="1" aria-sort="none">
                                 <button aria-label="Sort by Item">Name</button>
                             </th>
-                            <th scope="col" class="f-sortable f-numerical" colspan="1" aria-sort="none">
+                            <th scope="col" className="f-sortable f-numerical" colSpan="1" aria-sort="none">
                                 <button aria-label="Sort by Width">Date</button>
                             </th>
-                            <th scope="col" class="f-sortable f-numerical" colspan="1" aria-sort="none">
+                            <th scope="col" className="f-sortable f-numerical" colSpan="1" aria-sort="none">
                                 <button aria-label="Sort by Price">Status</button>
                             </th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>Initial Installation</td>
-                            <td class="f-numerical f-sub-categorical">Map 2016</td>
-                            <td class="f-numerical f-sub-categorical"><strong class="c-badge f-small f-accent">COMPLETED</strong></td>
-                        </tr>
-                        <tr>
-                            <td>Line Check</td>
-                            <td class="f-numerical f-sub-categorical">Jan 2017</td>
-                            <td class="f-numerical f-sub-categorical"><strong class="c-badge f-small f-accent">COMPLETED</strong></td>
-                        </tr>
+                        { this.state.cases.map(c => 
+                            <tr key={c.id}>
+                                <td>{c.name}</td>
+                                <td className="f-numerical f-sub-categorical">{c.date}</td>
+                                <td className="f-numerical f-sub-categorical"><strong className={`c-badge f-small ${c.status == "COMPLETED" ? "f-accent" : "f-highlight" }`}>{c.status}</strong></td>
+                            </tr>
+                        )}
+                        { this.props.caseupdates.map(c => 
+                            <tr key={c.id} className="pulseme">
+                                <td>{c.name}</td>
+                                <td className="f-numerical f-sub-categorical">{c.date}</td>
+                                <td className="f-numerical f-sub-categorical"><strong className={`c-badge f-small ${c.status == "COMPLETED" ? "f-accent" : "f-highlight" }`}>{c.status}</strong></td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>
@@ -103,16 +114,16 @@ class Cases extends Component {
 
 }
 
-export default () => 
+export default ({caseupdates}) => 
     <div className="m-panes m-panes-section-ext" data-grid="col-12">
     <section>
         <div data-grid="col-12" style={{"paddingTop": "48px"}}>
             <Persona name="Keith Howling" desc="Subscriber" image="http://getmwf.com/images/modules/persona/persona-example.jpg"/>
         </div>
-        <h2 data-grid="col-12" class="c-heading-3 x-offset-content x-hidden-focus" style={{"paddingLeft":"0", "width": "90%", "border-bottom": "1px solid rgba(0, 0, 0, 0.2)"}}>Router Details</h2>
+        <h2 data-grid="col-12" className="c-heading-3 x-offset-content x-hidden-focus" style={{"paddingLeft":"0", "width": "90%", "borderBottom": "1px solid rgba(0, 0, 0, 0.2)"}}>Our Records:</h2>
         <AttitionalInfo/>
-        <h2 data-grid="col-12" class="c-heading-3 x-offset-content x-hidden-focus" style={{"paddingLeft":"0", "width": "95%", "margin-bottom": "15px", "border-bottom": "1px solid rgba(0, 0, 0, 0.2)"}}>Support Cases</h2>
-        <Cases/>
+        <h2 data-grid="col-12" className="c-heading-3 x-offset-content x-hidden-focus" style={{"paddingLeft":"0", "width": "95%", "marginBottom": "15px", "borderBottom": "1px solid rgba(0, 0, 0, 0.2)"}}>Support Cases</h2>
+        <Cases caseupdates={caseupdates}/>
     </section>
     <section>
         <Alert type="error" head_txt="Router Disconnecting" body_txt="We've detected a potential issue"/>

@@ -14,11 +14,11 @@ export default  () => {
         <div style={{"margin": "auto", "width": "20%" }}>
             <div style={{"marginTop": "300px"}}>
 
-                <label class="c-label" for="default">Email</label>
-                <input id="default" class="c-text-field" type="text" name="default"/>
+                <label className="c-label">Email</label>
+                <input id="default" className="c-text-field" type="text" name="default"/>
 
-                <label class="c-label" for="default">Password</label>
-                <input class="c-password" type="password" name="default"/>
+                <label className="c-label">Password</label>
+                <input className="c-password" type="password" name="default"/>
             </div>
 
             <button  className="c-button f-primary"><Link to="/myusage">Login</Link></button>

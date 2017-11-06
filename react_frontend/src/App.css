@@ -1,5 +1,27 @@
 /* Overriddes of getmwf css library */
 
+/* page layout */ 
+/* header */
+
+.m-rich-heading.f-image {
+  width: 100%;
+  height: 200px;
+  background: rgb(21, 107, 198);
+  color: #FFF;
+  margin-top: 0;
+}
+
+.m-rich-heading>picture.c-image:after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 285px;
+  width: 115px;
+  height: 200px;
+  background: linear-gradient(to left,rgba(255,255,255,0) 0,rgb(21, 107, 198) 100%);
+}
+
 .m-content-placement {
   padding-left: 10px;
   padding-right: 10px;
@@ -16,6 +38,7 @@
   text-align: left;
   padding: 0px 10px 6px 10px;
 }
+
 
 .m-panes-ext h3 {
   text-align: left;
@@ -46,7 +69,7 @@
 
   }
   50% {
-    transform: scale(1.2);
+    transform: scale(1.1);
     opacity: 1.0;
     
 

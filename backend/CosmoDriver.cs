@@ -80,22 +80,39 @@ namespace dnconsole  {
             }
 
             // initiate changefeed - fire and forget
-            RunFeedProcessor(UriFactory.CreateDocumentCollectionUri(dbid,colls["router01"].Id));
+            RunFeedProcessor(UriFactory.CreateDocumentCollectionUri(dbid,colls[collections[0]].Id));
 
             Console.WriteLine($"InitCosmosClientAsync: Done");
         }
 
-        public async Task<ResourceResponse<Document>> insert(string col, JObject doc) {
+        public async Task<ResourceResponse<Document>> insertAsync(string col, JObject doc) {
 
             Console.WriteLine($"({_instance._initPromise.Status}) inserting into {col} {colls[col].SelfLink}");
             await _instance._initPromise;
             return await this.client.CreateDocumentAsync(colls[col].SelfLink, doc);
-        }        
+        }
+        public async Task<List<Document>> queryAsync(string col, string sql) {
+            var res = new List<Document>();
+            
+            // LINQ lambda expression https://docs.microsoft.com/en-us/azure/cosmos-db/documentdb-sql-query#Linq
+            //this.client.CreateDocumentQuery<Document>(colls[col].SelfLink).Select(x => x);
 
-        private Dictionary<string, string> checkpoints = new Dictionary<string, string>();
-        private  async Task RunFeedProcessor(Uri collectionUri)
+            var query =  this.client.CreateDocumentQuery<Document>(colls[col].SelfLink, sql).AsDocumentQuery();
+            while (query.HasMoreResults) {
+                foreach(Document d in await query.ExecuteNextAsync<Document>())
+                {
+                    // Iterate through Property to have List or any other operations
+                    res.Add(d);
+                }
+            }
+            return res;
+        }     
+
+        private Dictionary<string, string> checkpoints;
+        private  async void RunFeedProcessor(Uri collectionUri)
         {
             Console.WriteLine("Reading all changes from the beginning");
+            checkpoints = new Dictionary<string, string>();
             //Keep polling for the changes
             do
             {
@@ -153,17 +170,20 @@ namespace dnconsole  {
 
                     foreach (dynamic changedDocument in readChangesResponse)
                     {
-
-                        pushClients.ForEach((WebSocket wsClient) =>  {
-                            Console.WriteLine($"Sending document to connected client {changedDocument}");
-                            var encoded = System.Text.Encoding.UTF8.GetBytes(Convert.ToString(changedDocument));
-                            wsClient.SendAsync(new ArraySegment<Byte>(encoded, 0, encoded.Length), WebSocketMessageType.Text, true, System.Threading.CancellationToken.None);
-                        });
-                        //Console.ForegroundColor = ConsoleColor.Green;
-                        //Console.WriteLine("\tRead document {0} from the change feed.", changedDocument.id); //For Mongo it is "id" and for document it is "Id"
-                        //Console.ForegroundColor = ConsoleColor.Yellow;
-                        //Console.WriteLine("\tdocument: {0} \n\r", changedDocument); 
                         numChangesRead++;
+                        Console.WriteLine($"\nGot chnagedocument:\n{changedDocument}\n");
+                        if (pushClients != null) {
+                            Console.WriteLine($"sending to {pushClients.Count} clients");
+                            pushClients.ForEach((WebSocket wsClient) =>  {
+                                if (wsClient.State == WebSocketState.Open) {
+                                    var encoded = System.Text.Encoding.UTF8.GetBytes(Convert.ToString(changedDocument));
+                                    wsClient.SendAsync(new ArraySegment<Byte>(encoded, 0, encoded.Length), WebSocketMessageType.Text, true, System.Threading.CancellationToken.None);
+                                } else {
+                                    Console.WriteLine($"Websocket closed, removing");
+                                    pushClients.Remove (wsClient);
+                                }
+                            });
+                        }
                     }
                     Console.ForegroundColor = ConsoleColor.White;
                     checkpoints[pkRange.Id] = readChangesResponse.ResponseContinuation;
