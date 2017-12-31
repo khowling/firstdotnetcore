@@ -1,7 +1,7 @@
 
 ## Example Subscriber portal project
 
-example SPA app with embedded BOT
+my first .NET Core app, its an example SPA app with embedded BOT that uses CosmosDB and its change feed with kesteral web sockets
 
 ### directory ```backend```
 
