@@ -1,7 +1,7 @@
 obj
 bin
 frontend/node_modules
+vue_frontend/node_modules
 react_frontend/node_modules
-ttbot/node_modules
-ttbot/env.ps1
+
 
