@@ -9,16 +9,16 @@ import CSSTransitionGroup  from 'react-transition-group/Transition'
 
 import {Persona, Alert, Histogram} from './common.js'
 
-export const MyUsage = () => [
-    <PackageHeading key={1}/>,
+export const MyUsage = ({user}) => [
+    <PackageHeading key={1} user={user}/>,
     <Alerts  key={2}/>,
-    <MyProducts  key={3}/>
+    <MyProducts key={3} user={user}/>
 ]
 
-export const PackageHeading = () => 
+export const PackageHeading = ({user}) => 
     <div className="m-content-placement"  data-grid="col-12 pad-4x" style={{"marginBottom": "30px"}}>
         <div data-grid="col-3" style={{"paddingTop": "48px"}}>
-            <Persona name="Keith Howling" desc="Subscriber" image="http://getmwf.com/images/modules/persona/persona-example.jpg"/>,
+            <Persona name={user.name} desc={user.type} image="http://getmwf.com/images/modules/persona/persona-example.jpg"/>
         </div>
         <div data-grid="col-8">
             <div data-grid="col-12" className="m-banner">

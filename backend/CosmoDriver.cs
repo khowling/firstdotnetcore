@@ -25,6 +25,7 @@ namespace dnconsole  {
         public static void InitCosmoDriver(string endpointUrl, string acckey, string dbid, string[] collections) {
             if (_instance == null) {
                 _instance = new CosmoDriver();
+                _instance.pushClients = new List<WebSocket>();
                 _instance._initPromise = _instance.InitCosmosClientAsync(endpointUrl, acckey, dbid, collections);
             } else {
                 throw new System.Exception("CosmoDriver is a singleton and has already been initiallised.");
@@ -60,13 +61,13 @@ namespace dnconsole  {
             //    ConnectionProtocol = Protocol.Tcp
             //}
             );
-            Console.WriteLine($"InitCosmosClientAsync: CreateDatabaseIfNotExistsAsyncdbid {dbid}");
+            //Console.WriteLine($"InitCosmosClientAsync: CreateDatabaseIfNotExistsAsyncdbid {dbid}");
             this.db = await client.CreateDatabaseIfNotExistsAsync(new Database { Id = dbid });
 
             //Create a new collection with an OfferThroughput set to 10000
             //Not passing in RequestOptions.OfferThroughput will result in a collection with the default OfferThroughput set. 
             var tasks = collections.ToDictionary(i => i, i =>  {
-                Console.WriteLine($"InitCosmosClientAsync: CreateDocumentCollectionIfNotExistsAsync {i}");
+            //    Console.WriteLine($"InitCosmosClientAsync: CreateDocumentCollectionIfNotExistsAsync {i}");
                 return client.CreateDocumentCollectionIfNotExistsAsync(
                     UriFactory.CreateDatabaseUri(dbid), 
                     new DocumentCollection { Id = i });
@@ -111,7 +112,7 @@ namespace dnconsole  {
         private Dictionary<string, string> checkpoints;
         private  async void RunFeedProcessor(Uri collectionUri)
         {
-            Console.WriteLine("Reading all changes from the beginning");
+            Console.WriteLine("RunFeedProcessor: Reading all changes beginning ");
             checkpoints = new Dictionary<string, string>();
             //Keep polling for the changes
             do
@@ -171,17 +172,21 @@ namespace dnconsole  {
                     foreach (dynamic changedDocument in readChangesResponse)
                     {
                         numChangesRead++;
-                        Console.WriteLine($"\nGot chnagedocument:\n{changedDocument}\n");
+                        Console.WriteLine($"\nGot chnagedocument:\n{changedDocument.id}\n");
                         if (pushClients != null) {
-                            Console.WriteLine($"sending to {pushClients.Count} clients");
+                            Console.WriteLine($"sending to {pushClients.Count} stored clients");
                             pushClients.ForEach((WebSocket wsClient) =>  {
-                                if (wsClient.State == WebSocketState.Open) {
-                                    var encoded = System.Text.Encoding.UTF8.GetBytes(Convert.ToString(changedDocument));
-                                    wsClient.SendAsync(new ArraySegment<Byte>(encoded, 0, encoded.Length), WebSocketMessageType.Text, true, System.Threading.CancellationToken.None);
-                                } else {
-                                    Console.WriteLine($"Websocket closed, removing");
-                                    pushClients.Remove (wsClient);
-                                }
+                                //if (wsClient.State == WebSocketState.Open) {
+                                    try {
+                                        var encoded = System.Text.Encoding.UTF8.GetBytes(Convert.ToString(changedDocument));
+                                        wsClient.SendAsync(new ArraySegment<Byte>(encoded, 0, encoded.Length), WebSocketMessageType.Text, true, System.Threading.CancellationToken.None);
+                                    } catch (Exception e) {
+                                        Console.WriteLine($"Error {e}");
+                                    }
+                                //} else {
+                                    //Console.WriteLine($"Websocket closed, not removing");
+                                    //pushClients.Remove (wsClient);
+                                //}
                             });
                         }
                     }

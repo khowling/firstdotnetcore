@@ -119,7 +119,7 @@ namespace dnconsole
                 */
                 app.Map("/api/insert", (app1) => {
                     app1.Run(async context => {
-                        Document doc = await CosmoDriver.Instance.insertAsync(COLLECTION, JObject.FromObject(new {type = "case", name = "Upgrading Firmware", date = DateTime.Now.ToString("M"), status = "OPEN"}));
+                        Document doc = await CosmoDriver.Instance.insertAsync(COLLECTION, JObject.FromObject(new {type = "case", name = "C# Adding", date = DateTime.Now.ToString("M"), status = "OPEN"}));
                         Console.WriteLine($"created doc {doc.Id}");
                         await context.Response.WriteAsync(doc.Id);
                     });
@@ -127,23 +127,32 @@ namespace dnconsole
 
                 app.Map("/api/query", (app1) => {
                     app1.Run(async context => {
-                        Console.WriteLine($"/query {context.Request.Path.Value}");
-                        List<Document> docs = await CosmoDriver.Instance.queryAsync(COLLECTION, $"SELECT c.id, c.name, c.date,  c.status FROM {COLLECTION} c where c.type = 'case'");
-                        await context.Response.WriteAsync(JsonConvert.SerializeObject(docs));
+                        var paths = context.Request.Path.Value.Split('/');
+
+                        if (!String.IsNullOrEmpty(paths[1])) {
+                            var cols_str = String.Join (",", new []{"id", "name", "date", "type"}.Concat(context.Request.Query["ex_cols"].ToString().Split(',', StringSplitOptions.RemoveEmptyEntries)).Select(c => $"c.{c}"));
+                            var sql  = $"SELECT {cols_str} FROM {COLLECTION} c WHERE c.type = '{paths[1]}'";
+                            if (paths.Length > 2 && !String.IsNullOrEmpty(paths[2])) {
+                                sql += $" AND c.id = '{paths[2]}'";
+                            }
+                            Console.WriteLine($"\nquery: '{sql}'");
+                            List<Document> docs = await CosmoDriver.Instance.queryAsync(COLLECTION, sql);
+                            await context.Response.WriteAsync(JsonConvert.SerializeObject(docs));
+                        } else {
+                            context.Response.StatusCode = 400;
+                        }
                     });
                 });
 
                 app.Map("/ws", (app1) => {
 
-                    Console.WriteLine($"/ws registering 'Run'");
-
                     app1.Run(async context => {
                         if (context.WebSockets.IsWebSocketRequest) {
                             WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-
-                            var encoded = System.Text.Encoding.UTF8.GetBytes("{\"status\": \"Connecting to Cosmos Change Feed\"}");
+                            Console.WriteLine ("New Websocket connection");
+                            var encoded = System.Text.Encoding.UTF8.GetBytes("{\"type\":\"debug\", \"status\": \"Connecting to Cosmos Change Feed\"}");
                             await webSocket.SendAsync(new ArraySegment<Byte>(encoded, 0, encoded.Length), WebSocketMessageType.Text, true, System.Threading.CancellationToken.None);
-                            CosmoDriver.Instance.pushClients = new List<WebSocket> {webSocket};
+                            CosmoDriver.Instance.pushClients.Add(webSocket);
                             await Echo(context, webSocket);
                         }
                         else {
@@ -156,7 +165,7 @@ namespace dnconsole
                 // Run should only be called at the end of your pipeline
 
                 app.Run(async context => {
-                    Console.WriteLine ($"context {context.Request.Path}");
+                    Console.WriteLine ($"No Route 404: {context.Request.Path}");
                     await context.Response.WriteAsync("Hi!");
                 });
             };
@@ -179,7 +188,7 @@ namespace dnconsole
                 // The Configure method is used to specify how the ASP.NET application will respond to HTTP requests.
 
                 .Configure(appPipeline)
-                .UseApplicationInsights()
+            //    .UseApplicationInsights()
                 .Build();
 
             //return await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(dbid, collid, family.Id));

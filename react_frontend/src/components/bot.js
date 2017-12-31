@@ -10,10 +10,7 @@ import { Chat } from 'botframework-webchat'
 import 'botframework-webchat/botchat.css'
 
 
-class AttitionalInfo extends Component {
-    
-    render () {
-        return (
+const AttitionalInfo = ({user}) => 
             <div className="m-additional-information " style={{"boarderLeft": "0px solid rgba(0,0,0,.2)"}}>
                 <div data-grid="col-12 stack-2">
                         <div data-grid="col-6">
@@ -21,20 +18,19 @@ class AttitionalInfo extends Component {
                                 <li>
                                     <strong>Router Model</strong>
                                 </li>
-                                <li>TopTelco Plus Fibre</li>
-                                <li>router &copy; 2016</li>
+                                <li>{user.install && user.install["router-model"]}</li>
                             </ul>
                             <ul className="c-list f-bare f-lean">
                                 <li>
                                     <strong>Router Install Date</strong>
                                 </li>
-                                <li>11/4/15</li>
+                                <li>{user.install && user.install["install-date"]}</li>
                             </ul>
                             <ul className="c-list f-bare f-lean">
                                 <li>
                                     <strong>Firmware Version</strong>
                                 </li>
-                                <li><div className="pulseme">Unknown</div></li>
+                                <li><div className="pulseme">{user.install && user.install["firmware-version"]}</div></li>
                             </ul>
                         </div>
                         <div data-grid="col-6">
@@ -52,25 +48,32 @@ class AttitionalInfo extends Component {
                             <div className="c-content-toggle">
                                 <p id="content-toggle-target" data-f-expanded="false">
                                     <strong>Permissions</strong>
-                                    <br/>install location
-                                    <br/>access status
+                                    <br/>{user.install && user.install["permission"]}
                                 </p>
                                 <button data-f-more="Show more" data-f-less="Show less" data-f-show="3" aria-hidden="true">Show more</button>
                             </div>
                         </div>
                 </div>
             </div>
-        )
-    }
-}
+
 
 class Cases extends Component {
     state = {cases: []};
 
     componentDidMount() {
-        fetch ('/api/query/cases').then(response => {
-            return response.json()
-        }).then(json => this.setState ({cases: json}))
+        // elegant APIs around XHR, available now in Firefox and Chrome Canary
+        fetch ('/api/query/case?ex_cols=status', {
+            headers: new Headers({
+                'Content-Type': 'text/plain'
+            })
+        }).then(response => {
+            if (response.status !== 200) {
+                return Promise.reject(new Error(response.statusText));
+            } else {
+                // this returns a Promise to the chained method
+                return response.json()
+            }
+        }).then(json => this.setState ({cases: json}), err => console.log(`failed to get cases : ${err}`))
     }
 
     render () {
@@ -114,16 +117,18 @@ class Cases extends Component {
 
 }
 
-export default ({caseupdates}) => 
+export default ({caseupdates, user}) => 
     <div className="m-panes m-panes-section-ext" data-grid="col-12">
     <section>
         <div data-grid="col-12" style={{"paddingTop": "48px"}}>
-            <Persona name="Keith Howling" desc="Subscriber" image="http://getmwf.com/images/modules/persona/persona-example.jpg"/>
+            <Persona name={user.name} desc={user.type} image="http://getmwf.com/images/modules/persona/persona-example.jpg"/>
         </div>
         <h2 data-grid="col-12" className="c-heading-3 x-offset-content x-hidden-focus" style={{"paddingLeft":"0", "width": "90%", "borderBottom": "1px solid rgba(0, 0, 0, 0.2)"}}>Our Records:</h2>
-        <AttitionalInfo/>
+        <AttitionalInfo user={user}/>
         <h2 data-grid="col-12" className="c-heading-3 x-offset-content x-hidden-focus" style={{"paddingLeft":"0", "width": "95%", "marginBottom": "15px", "borderBottom": "1px solid rgba(0, 0, 0, 0.2)"}}>Support Cases</h2>
         <Cases caseupdates={caseupdates}/>
+        <h2 data-grid="col-12" className="c-heading-3 x-offset-content x-hidden-focus" style={{"paddingLeft":"0", "width": "90%", "borderBottom": "1px solid rgba(0, 0, 0, 0.2)"}}>Invoices:</h2>
+
     </section>
     <section>
         <Alert type="error" head_txt="Router Disconnecting" body_txt="We've detected a potential issue"/>

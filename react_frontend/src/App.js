@@ -184,7 +184,7 @@ const Products = () =>
 
 
 class App extends Component {
-  state = { connection: "Not Connected", caseupdates: [] };
+  state = { connection: "Not Connected", caseupdates: [], user:{} };
 
   _wsSendJoin(keepalive) {
     this.setState ({connection: "connected"})
@@ -195,23 +195,50 @@ class App extends Component {
     let msg = JSON.parse(event.data)
     if (msg.type == "case") {
         this.setState({caseupdates: this.state.caseupdates.concat(msg)})
+    } else if (msg.type == "subscriber") {
+        this.setState({user: msg})
     }
   }
 
   _wsCloseEvent(event) {
-    this.ws.removeEventListener('open', this._wsSendJoin.bind(this));
-    this.ws.removeEventListener('message', this._wsMessageEvent.bind(this));
-    this.ws.removeEventListener('close', this._wsCloseEvent.bind(this));
-    this.ws = null;
+    if (this.ws) {
+        this.ws.removeEventListener('open', this._wsSendJoin.bind(this));
+        this.ws.removeEventListener('message', this._wsMessageEvent.bind(this));
+        this.ws.removeEventListener('close', this._wsCloseEvent.bind(this));
+        this.ws = null;
+    }
     this.setState ({connection: "Not Connected"})
+  }
+
+  _wsConnect() {
+      setInterval(() => {
+        if (this.state.connection != "connected") {
+            this.ws = new WebSocket(`ws://${window.location.hostname}:5000/ws`)
+            this.ws.addEventListener('open', this._wsSendJoin.bind(this, false))
+            this.ws.addEventListener('message', this._wsMessageEvent.bind(this))
+            this.ws.addEventListener('close', this._wsCloseEvent.bind(this))
+        }
+      }, 5000);
+  
   }
 
 
   componentDidMount() {
-    this.ws = new WebSocket(`ws://${window.location.hostname}:5000/ws`);
-    this.ws.addEventListener('open', this._wsSendJoin.bind(this, false));
-    this.ws.addEventListener('message', this._wsMessageEvent.bind(this));
-    this.ws.addEventListener('close', this._wsCloseEvent.bind(this));
+    this._wsConnect()
+
+    // elegant APIs around XHR, available now in Firefox and Chrome Canary
+    fetch ('/api/query/subscriber/CUST001?ex_cols=install,email', {
+        headers: new Headers({
+            'Content-Type': 'text/plain'
+        })
+    }).then(response => {
+        if (response.status !== 200) {
+            return Promise.reject(new Error(response.statusText));
+        } else {
+            // this returns a Promise to the chained method
+            return response.json()
+        }
+    }).then(u => this.setState ({user: u[0]}), err => console.log(`failed to get cases : ${err}`))
   }
 
   render() {
@@ -220,10 +247,9 @@ class App extends Component {
             <main id="mainContent">
                 <RichHeading/>
                 <div data-grid="container">
-                    <div data-grid="col12">{this.state.connection}</div>
-                    <Route exact path="/bot" render={(props) => (<Bot caseupdates={this.state.caseupdates} />)}/>
+                    <Route exact path="/bot" render={(props) => (<Bot user={this.state.user} caseupdates={this.state.caseupdates} />)}/>
                     <Route exact path="/diag" component={RouterDiag}/>
-                    <Route exact path="/myusage" component={MyUsage}/>
+                    <Route exact path="/myusage" render={(props) => (<MyUsage user={this.state.user} />)}/>
                     <Route exact path="/" component={Login}/>
                 </div>
             </main>
