@@ -62,8 +62,8 @@ namespace dnconsole
 
 
         static string COLLECTION = "myaccount";
-        static string DOCDB_EMULATOR_ACC_NAME = "https://ttmyaccount.documents.azure.com:443"; //"https://localhost:8081";
-        static string DOCDB_EMULATOR_KEY = "gtdvCoU2xZjgGyyOvpr1nx4nxCtucgyeaTBmTo0K2MHJy1s6Gu6tM1hnDsC7Ej3DvwqBiz2C6gzo7bQELBJVuw=="; //"C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+        static string DOCDB_EMULATOR_ACC_NAME = "https://myaccount.documents.azure.com:443"; //"https://localhost:8081";
+        static string DOCDB_EMULATOR_KEY = "**"; 
 
         
         private static async void InitAppAsync() {
@@ -104,7 +104,9 @@ namespace dnconsole
             */
             Action<IApplicationBuilder> appPipeline = (app) => {
                 
-                //app.UseStaticFiles(); // build in middleware to host static files
+                app.UseDefaultFiles(); // default files to index.html
+                app.UseStaticFiles();
+
                 app.UseWebSockets(); // build in middleware 
                 //app.UseAuthentication(); // built in middleware to Authenticate before you access
 
@@ -163,11 +165,12 @@ namespace dnconsole
 
                 // The Run method short circuits the pipeline (that is, it will not call a next request delegate)
                 // Run should only be called at the end of your pipeline
-
+/* 
                 app.Run(async context => {
                     Console.WriteLine ($"No Route 404: {context.Request.Path}");
                     await context.Response.WriteAsync("Hi!");
                 });
+ */
             };
 
             /*  ASP.NET Core apps require a "host" in which to execute. A host references the server that will handle requests
@@ -184,11 +187,13 @@ namespace dnconsole
             */
             var host = new WebHostBuilder()
                 .UseKestrel()
-                .UseWebRoot("public") // (Content Root Path)\public
+                //.UseWebRoot("public") // (Content Root Path)\public
+                 .UseContentRoot(Directory.GetCurrentDirectory())
                 // The Configure method is used to specify how the ASP.NET application will respond to HTTP requests.
 
                 .Configure(appPipeline)
             //    .UseApplicationInsights()
+                .UseUrls("http://0.0.0.0:3000")
                 .Build();
 
             //return await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(dbid, collid, family.Id));
